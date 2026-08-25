@@ -1,6 +1,6 @@
 # Bandit configuration for profile-builder.
 #
-# The plugin's contract is orchestrating native Hermes CLIs (see AGENTS.md):
+# The plugin's contract is orchestrating native Hermes CLIs (see the repo README):
 # it shells out to `hermes profile/config/plugins/...` via subprocess.run with
 # a command LIST (never shell=True). B404/B603 are therefore by-design, not
 # defects. The command lists are built from validated manifest items and
