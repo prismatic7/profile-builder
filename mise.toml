@@ -1,0 +1,45 @@
+[tools]
+uv = "0.11.29"
+
+[env]
+UV_PYTHON = "3.11"
+
+[tasks.setup]
+description = "Create the locked development environment"
+run = "uv sync --locked --extra dev"
+
+[tasks.format]
+description = "Check source formatting"
+run = "uv run ruff format --check __init__.py src tests"
+
+[tasks.lint]
+description = "Run static lint checks"
+run = "uv run ruff check __init__.py src tests"
+
+[tasks.typecheck]
+description = "Run strict type checks"
+run = "uv run mypy --explicit-package-bases src/profile_builder tests"
+
+[tasks.test]
+description = "Run the full test suite"
+run = "uv run pytest"
+
+[tasks.contract]
+description = "Run the focused Hermes plugin contract"
+run = "uv run pytest tests/test_registration.py"
+
+[tasks.security]
+description = "Run source and dependency security checks"
+run = "uv run bandit -q -r __init__.py src && uv run pip-audit --local"
+
+[tasks.ci]
+description = "Run the complete local and GitHub CI path"
+depends = ["setup"]
+run = [
+  "mise run format",
+  "mise run lint",
+  "mise run typecheck",
+  "mise run test",
+  "mise run contract",
+  "mise run security",
+]

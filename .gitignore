@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+dist/
+build/
+*.egg-info/
+
+# Runtime build artifacts — never commit (contain profile dumps, vault paths,
+# and rollback evidence with personal data)
+state/
+snapshots/

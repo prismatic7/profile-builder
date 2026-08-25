@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12"]
+    env:
+      HERMES_CORE: ${{ github.workspace }}/.hermes-core
+      UV_PYTHON: ${{ matrix.python }}
+    steps:
+      - name: Check out plugin
+        uses: actions/checkout@v4
+      - name: Check out Hermes Agent
+        uses: actions/checkout@v4
+        with:
+          repository: NousResearch/hermes-agent
+          path: .hermes-core
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Set up Mise
+        uses: jdx/mise-action@v3
+        with:
+          install: true
+          cache: true
+      - name: Run CI
+        run: mise run ci
