@@ -7,6 +7,7 @@ reimplements profile creation.
 
 from __future__ import annotations
 
+import contextlib
 from pathlib import Path
 from typing import Any
 
@@ -28,12 +29,10 @@ def register(ctx: Any) -> None:
     skills_dir = Path(__file__).resolve().parent.parent.parent / "skills"
     skill_md = skills_dir / "profile-builder" / "SKILL.md"
     if skill_md.exists():
-        try:
-            ctx.register_skill("profile-builder", skill_md)
-        except Exception:
+        with contextlib.suppress(Exception):
             # Skill registration is best-effort; the command/tools are the
             # primary surface.
-            pass
+            ctx.register_skill("profile-builder", skill_md)
 
     ctx.register_command(
         "profile-build",
@@ -55,10 +54,15 @@ def register(ctx: Any) -> None:
                 "properties": {
                     "subcommand": {
                         "type": "string",
-                        "description": "new|status|propose|scope|design|confirm|apply|validate|rollback|list",
+                        "description": (
+                            "new|status|propose|scope|design|confirm|apply|validate|rollback|list"
+                        ),
                     },
                     "name": {"type": "string", "description": "Build/profile name"},
-                    "args": {"type": "string", "description": "Extra arguments (scope text, JSON manifest)"},
+                    "args": {
+                        "type": "string",
+                        "description": "Extra arguments (scope text, JSON manifest)",
+                    },
                 },
                 "required": ["subcommand"],
             },

@@ -2,17 +2,16 @@
 
 from __future__ import annotations
 
-import json
 import time
 from pathlib import Path
 
 import pytest
 
 from profile_builder.state import (
+    DEFAULT_CONFIRM_TTL,
     Build,
     BuildError,
     BuildStore,
-    DEFAULT_CONFIRM_TTL,
 )
 
 
@@ -46,7 +45,9 @@ def test_approval_default_ttl() -> None:
     b = Build(name="test")
     b.add_approval("skin", "confirm skin")
     assert b.has_valid_approval("skin")
-    assert b.approvals[0].expires_at - b.approvals[0].confirmed_at == pytest.approx(DEFAULT_CONFIRM_TTL)
+    assert b.approvals[0].expires_at - b.approvals[0].confirmed_at == pytest.approx(
+        DEFAULT_CONFIRM_TTL
+    )
 
 
 def test_invalid_name_rejected() -> None:

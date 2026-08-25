@@ -11,15 +11,14 @@ The plugin never reimplements profile creation — it drives `hermes`.
 
 from __future__ import annotations
 
-import json
 import os
 import shutil
 import subprocess
 import tarfile
-import tempfile
 import time
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any
 
 from .state import Build, BuildError, BuildStore
 
@@ -57,7 +56,7 @@ def _run(
     *,
     scoped: bool = True,
     timeout: int = 300,
-    input_data: Optional[str] = None,
+    input_data: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """Run a hermes CLI subprocess, scoped to *profile* via `-p`.
 
@@ -182,7 +181,7 @@ def apply_config(build: Build, store: BuildStore, profile: str, key: str, value:
     return f"set {key}={value}"
 
 
-def apply_plugins(build: Build, store: BuildStore, profile: str, plugins: List[str]) -> str:
+def apply_plugins(build: Build, store: BuildStore, profile: str, plugins: list[str]) -> str:
     _require_approval(build, "plugins", f"install {', '.join(plugins)}")
     rel = _snapshot(profile, build, store)
     results = []
@@ -196,7 +195,7 @@ def apply_plugins(build: Build, store: BuildStore, profile: str, plugins: List[s
     return f"installed plugins: {', '.join(results)}"
 
 
-def apply_skills(build: Build, store: BuildStore, profile: str, skills: List[str]) -> str:
+def apply_skills(build: Build, store: BuildStore, profile: str, skills: list[str]) -> str:
     _require_approval(build, "skills", f"install {', '.join(skills)}")
     rel = _snapshot(profile, build, store)
     results = []
@@ -269,7 +268,7 @@ def apply_env(build: Build, store: BuildStore, profile: str, key: str, value: st
     pdir = profile_dir(profile)
     pdir.mkdir(parents=True, exist_ok=True)
     env_path = pdir / ".env"
-    lines: List[str] = []
+    lines: list[str] = []
     if env_path.exists():
         lines = env_path.read_text().splitlines()
     # Replace existing key, append otherwise.
@@ -293,7 +292,7 @@ def apply_mcp(
     profile: str,
     name: str,
     command: str,
-    args: List[str],
+    args: list[str],
 ) -> str:
     """Add an MCP server to the profile's config.yaml.
 
@@ -343,9 +342,7 @@ def apply_link(
     if (src / "plugin.yaml").exists():
         proc = _run(["hermes", "plugins", "enable", target], profile)
         if proc.returncode != 0:
-            raise BuildError(
-                f"hermes plugins enable {target} failed: {proc.stderr.strip()}"
-            )
+            raise BuildError(f"hermes plugins enable {target} failed: {proc.stderr.strip()}")
     _log_step(build, "link", f"linked {source} -> {target} (snapshot {rel})")
     store.save(build)
     return f"linked {source} -> {target}"
@@ -355,7 +352,7 @@ def apply_link(
 # Orchestration
 # ---------------------------------------------------------------------------
 
-MANIFEST_ACTIONS: Dict[str, Any] = {
+MANIFEST_ACTIONS: dict[str, Any] = {
     "create": apply_create,
     "config": apply_config,
     "plugins": apply_plugins,
@@ -370,10 +367,10 @@ MANIFEST_ACTIONS: Dict[str, Any] = {
 }
 
 
-def apply_manifest(build: Build, store: BuildStore, profile: str) -> List[str]:
+def apply_manifest(build: Build, store: BuildStore, profile: str) -> list[str]:
     """Apply every confirmed manifest item in order. Returns step results."""
     build.require_phase("implementation")
-    results: List[str] = []
+    results: list[str] = []
     manifest = build.manifest
     for item in MANIFEST_ACTIONS:
         if item not in manifest:
@@ -383,7 +380,9 @@ def apply_manifest(build: Build, store: BuildStore, profile: str) -> List[str]:
             results.append(apply_create(build, store, profile, str(spec.get("description", ""))))
         elif item == "config":
             for kv in spec:
-                results.append(apply_config(build, store, profile, str(kv["key"]), str(kv["value"])))
+                results.append(
+                    apply_config(build, store, profile, str(kv["key"]), str(kv["value"]))
+                )
         elif item in ("plugins", "skills"):
             results.append(MANIFEST_ACTIONS[item](build, store, profile, [str(x) for x in spec]))
         elif item == "skin":

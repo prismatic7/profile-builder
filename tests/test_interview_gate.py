@@ -13,8 +13,9 @@ These tests pin the corrected behaviour:
 from __future__ import annotations
 
 import json
-import os
+import shutil
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -27,21 +28,19 @@ TEST_HOME = Path("/tmp/hpb-interview-test")
 @pytest.fixture(autouse=True)
 def isolated_home(monkeypatch: pytest.MonkeyPatch) -> None:
     if TEST_HOME.exists():
-        import shutil
-
         shutil.rmtree(TEST_HOME)
     TEST_HOME.mkdir(parents=True)
     monkeypatch.setenv("HERMES_HOME", str(TEST_HOME))
 
 
-def _ok(data: str) -> dict:
-    parsed = json.loads(data)
+def _ok(data: str) -> dict[str, Any]:
+    parsed: dict[str, Any] = json.loads(data)
     assert parsed.get("success") is True, parsed
     return parsed
 
 
-def _err(data: str) -> dict:
-    parsed = json.loads(data)
+def _err(data: str) -> dict[str, Any]:
+    parsed: dict[str, Any] = json.loads(data)
     assert parsed.get("success") is False, parsed
     return parsed
 

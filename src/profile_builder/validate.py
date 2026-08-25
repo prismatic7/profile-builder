@@ -8,10 +8,8 @@ the exit code — it never mutates the profile.
 from __future__ import annotations
 
 import os
-import subprocess
-import time
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from .apply import _run, profile_dir
 from .state import Build, BuildError
@@ -21,14 +19,14 @@ def _hermes_home() -> Path:
     return Path(os.environ.get("HERMES_HOME", str(Path.home() / ".hermes")))
 
 
-def _check(checks: List[Dict[str, Any]], name: str, ok: bool, detail: str) -> None:
+def _check(checks: list[dict[str, Any]], name: str, ok: bool, detail: str) -> None:
     checks.append({"name": name, "ok": ok, "detail": detail})
 
 
-def validate(build: Build, profile: str) -> List[Dict[str, Any]]:
+def validate(build: Build, profile: str) -> list[dict[str, Any]]:
     """Run all validation checks. Returns a list of check results."""
     build.require_phase("validation")
-    checks: List[Dict[str, Any]] = []
+    checks: list[dict[str, Any]] = []
     pdir = profile_dir(profile)
 
     # 1. Profile directory exists
@@ -125,7 +123,7 @@ def validate(build: Build, profile: str) -> List[Dict[str, Any]]:
     return checks
 
 
-def summarize(checks: List[Dict[str, Any]]) -> str:
+def summarize(checks: list[dict[str, Any]]) -> str:
     """Render check results as a compact report."""
     lines = []
     for c in checks:

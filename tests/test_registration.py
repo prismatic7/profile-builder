@@ -11,7 +11,7 @@ import importlib
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -20,17 +20,21 @@ class RecordingContext:
     """Records registrations instead of executing them."""
 
     def __init__(self) -> None:
-        self.commands: List[Dict[str, Any]] = []
-        self.tools: List[Dict[str, Any]] = []
+        self.commands: list[dict[str, Any]] = []
+        self.tools: list[dict[str, Any]] = []
 
-    def register_command(self, name: str, handler: Any, description: str = "", **kwargs: Any) -> None:
-        self.commands.append({"name": name, "handler": handler, "description": description, **kwargs})
+    def register_command(
+        self, name: str, handler: Any, description: str = "", **kwargs: Any
+    ) -> None:
+        self.commands.append(
+            {"name": name, "handler": handler, "description": description, **kwargs}
+        )
 
     def register_tool(
         self,
         name: str,
         toolset: str,
-        schema: Dict[str, Any],
+        schema: dict[str, Any],
         handler: Any,
         description: str = "",
         **kwargs: Any,

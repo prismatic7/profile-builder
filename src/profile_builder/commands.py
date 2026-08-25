@@ -16,7 +16,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from .apply import apply_manifest
 from .rollback import rollback
@@ -35,7 +35,7 @@ def _store() -> BuildStore:
     return BuildStore(_data_dir())
 
 
-def _ok(payload: Dict[str, Any]) -> str:
+def _ok(payload: dict[str, Any]) -> str:
     return json.dumps({"success": True, **payload})
 
 
@@ -43,7 +43,7 @@ def _err(message: str) -> str:
     return json.dumps({"success": False, "error": message})
 
 
-def _build_summary(b: Build) -> Dict[str, Any]:
+def _build_summary(b: Build) -> dict[str, Any]:
     return {
         "name": b.name,
         "phase": b.phase,
@@ -55,26 +55,28 @@ def _build_summary(b: Build) -> Dict[str, Any]:
     }
 
 
-def _manifest_items(build: Build) -> List[str]:
+def _manifest_items(build: Build) -> list[str]:
     """Every confirmable item: profile creation + each manifest key.
 
     Dedupe: the manifest may itself contain a `create` key, which would
     otherwise list the item twice.
     """
-    seen: List[str] = []
+    seen: list[str] = []
     for it in ["create", *build.manifest.keys()]:
         if it not in seen:
             seen.append(it)
     return seen
 
 
-def _unconfirmed_items(build: Build) -> List[str]:
+def _unconfirmed_items(build: Build) -> list[str]:
     return [it for it in _manifest_items(build) if it not in build.confirmed]
 
 
 def _item_detail(build: Build, item: str) -> str:
     """One-line description of what confirming *item* will apply."""
     spec = build.manifest.get(item)
+    if spec is None:
+        return ""
     if item == "create":
         return f"create profile {build.name}"
     if item == "config":
@@ -95,7 +97,7 @@ def _item_detail(build: Build, item: str) -> str:
     if item == "mcp":
         return "; ".join(f"{s['name']} ({s['command']})" for s in spec)
     if item == "link":
-        return "; ".join(f"{l['source']} -> {l['target']}" for l in spec)
+        return "; ".join(f"{lnk['source']} -> {lnk['target']}" for lnk in spec)
     return str(spec)[:100]
 
 
@@ -104,7 +106,7 @@ def _item_detail(build: Build, item: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def cmd_new(args: List[str]) -> str:
+def cmd_new(args: list[str]) -> str:
     if not args:
         return _err("usage: /profile-build new <name> [description]")
     name = args[0]
@@ -124,7 +126,7 @@ def cmd_new(args: List[str]) -> str:
         return _err(str(exc))
 
 
-def cmd_status(args: List[str]) -> str:
+def cmd_status(args: list[str]) -> str:
     store = _store()
     if not args:
         builds = store.list()
@@ -138,7 +140,7 @@ def cmd_status(args: List[str]) -> str:
         return _err(str(exc))
 
 
-def cmd_propose(args: List[str]) -> str:
+def cmd_propose(args: list[str]) -> str:
     if not args:
         return _err("usage: /profile-build propose <name>")
     store = _store()
@@ -189,8 +191,7 @@ def cmd_propose(args: List[str]) -> str:
                 "proposal": (
                     "Review each manifest item. Confirm individually with "
                     "/profile-build confirm <name> <item> — nothing is applied "
-                    "silently. Unconfirmed items: "
-                    + ", ".join(items)
+                    "silently. Unconfirmed items: " + ", ".join(items)
                 ),
                 "items": [
                     {
@@ -219,7 +220,7 @@ def cmd_propose(args: List[str]) -> str:
     return _err(f"unknown phase {phase!r}")
 
 
-def cmd_scope(args: List[str]) -> str:
+def cmd_scope(args: list[str]) -> str:
     if len(args) < 2:
         return _err("usage: /profile-build scope <name> <scope text>")
     store = _store()
@@ -233,7 +234,7 @@ def cmd_scope(args: List[str]) -> str:
         return _err(str(exc))
 
 
-def cmd_design(args: List[str]) -> str:
+def cmd_design(args: list[str]) -> str:
     if len(args) < 2:
         return _err("usage: /profile-build design <name> <json manifest>")
     store = _store()
@@ -250,7 +251,7 @@ def cmd_design(args: List[str]) -> str:
         return _err(str(exc))
 
 
-def cmd_confirm(args: List[str]) -> str:
+def cmd_confirm(args: list[str]) -> str:
     if not args:
         return _err("usage: /profile-build confirm <name> [item]")
     store = _store()
@@ -275,11 +276,18 @@ def cmd_confirm(args: List[str]) -> str:
     if build.phase == "scoping":
         build.advance("design")
         store.save(build)
-        return _ok({"message": "scope approved — now design the manifest", "build": _build_summary(build)})
+        return _ok(
+            {"message": "scope approved — now design the manifest", "build": _build_summary(build)}
+        )
     if build.phase == "design":
         build.advance("interview")
         store.save(build)
-        return _ok({"message": "design reviewed — now confirm each manifest item", "build": _build_summary(build)})
+        return _ok(
+            {
+                "message": "design reviewed — now confirm each manifest item",
+                "build": _build_summary(build),
+            }
+        )
     if build.phase == "interview":
         missing = _unconfirmed_items(build)
         if missing:
@@ -290,23 +298,31 @@ def cmd_confirm(args: List[str]) -> str:
             )
         build.advance("implementation")
         store.save(build)
-        return _ok({"message": "all items confirmed — ready to apply", "build": _build_summary(build)})
+        return _ok(
+            {"message": "all items confirmed — ready to apply", "build": _build_summary(build)}
+        )
     return _err(f"nothing to confirm in phase {build.phase!r}")
 
 
-def cmd_apply(args: List[str]) -> str:
+def cmd_apply(args: list[str]) -> str:
     if not args:
         return _err("usage: /profile-build apply <name>")
     store = _store()
     try:
         build = store.load(args[0])
         results = apply_manifest(build, store, args[0])
-        return _ok({"message": "implementation complete", "results": results, "build": _build_summary(build)})
+        return _ok(
+            {
+                "message": "implementation complete",
+                "results": results,
+                "build": _build_summary(build),
+            }
+        )
     except BuildError as exc:
         return _err(str(exc))
 
 
-def cmd_validate(args: List[str]) -> str:
+def cmd_validate(args: list[str]) -> str:
     if not args:
         return _err("usage: /profile-build validate <name>")
     store = _store()
@@ -318,7 +334,7 @@ def cmd_validate(args: List[str]) -> str:
         return _err(str(exc))
 
 
-def cmd_rollback(args: List[str]) -> str:
+def cmd_rollback(args: list[str]) -> str:
     if not args:
         return _err("usage: /profile-build rollback <name>")
     store = _store()
@@ -330,7 +346,7 @@ def cmd_rollback(args: List[str]) -> str:
         return _err(str(exc))
 
 
-def cmd_list(args: List[str]) -> str:
+def cmd_list(args: list[str]) -> str:
     store = _store()
     builds = store.list()
     if not builds:
@@ -338,7 +354,7 @@ def cmd_list(args: List[str]) -> str:
     return _ok({"builds": [_build_summary(b) for b in builds]})
 
 
-SUBCOMMANDS: Dict[str, Any] = {
+SUBCOMMANDS: dict[str, Any] = {
     "new": cmd_new,
     "status": cmd_status,
     "propose": cmd_propose,
@@ -365,7 +381,8 @@ def handle_command(raw_args: str, **kwargs: Any) -> str:
     if handler is None:
         return _err(f"unknown subcommand {sub!r}")
     try:
-        return handler(parts[1:])
+        result = handler(parts[1:])
+        return result if isinstance(result, str) else _err("handler returned non-string")
     except Exception as exc:  # never raise — tool contract
         return _err(f"{sub} failed: {exc}")
 
@@ -375,7 +392,7 @@ def handle_command(raw_args: str, **kwargs: Any) -> str:
 # ---------------------------------------------------------------------------
 
 
-def handle_tool_build(args: Dict[str, Any], **kwargs: Any) -> str:
+def handle_tool_build(args: dict[str, Any], **kwargs: Any) -> str:
     """Run a profile-build subcommand programmatically."""
     sub = str(args.get("subcommand", ""))
     name = str(args.get("name", ""))
@@ -386,13 +403,13 @@ def handle_tool_build(args: Dict[str, Any], **kwargs: Any) -> str:
     return handle_command(" ".join(parts))
 
 
-def handle_tool_status(args: Dict[str, Any], **kwargs: Any) -> str:
+def handle_tool_status(args: dict[str, Any], **kwargs: Any) -> str:
     """Show build status for one build or all builds."""
     name = str(args.get("name", ""))
     return cmd_status([name] if name else [])
 
 
-def handle_tool_apply(args: Dict[str, Any], **kwargs: Any) -> str:
+def handle_tool_apply(args: dict[str, Any], **kwargs: Any) -> str:
     """Apply a confirmed manifest for a build."""
     name = str(args.get("name", ""))
     if not name:
@@ -400,7 +417,7 @@ def handle_tool_apply(args: Dict[str, Any], **kwargs: Any) -> str:
     return cmd_apply([name])
 
 
-def handle_tool_validate(args: Dict[str, Any], **kwargs: Any) -> str:
+def handle_tool_validate(args: dict[str, Any], **kwargs: Any) -> str:
     """Run validation checks for a build."""
     name = str(args.get("name", ""))
     if not name:
@@ -408,7 +425,7 @@ def handle_tool_validate(args: Dict[str, Any], **kwargs: Any) -> str:
     return cmd_validate([name])
 
 
-def handle_tool_rollback(args: Dict[str, Any], **kwargs: Any) -> str:
+def handle_tool_rollback(args: dict[str, Any], **kwargs: Any) -> str:
     """Restore the most recent snapshot for a build."""
     name = str(args.get("name", ""))
     if not name:

@@ -1,0 +1,20 @@
+# Bandit configuration for profile-builder.
+#
+# The plugin's contract is orchestrating native Hermes CLIs (see AGENTS.md):
+# it shells out to `hermes profile/config/plugins/...` via subprocess.run with
+# a command LIST (never shell=True). B404/B603 are therefore by-design, not
+# defects. The command lists are built from validated manifest items and
+# profile names; no user input is ever interpolated into a shell string.
+#
+# Keep these exclusions scoped to apply.py — the only module that spawns
+# subprocesses. If new subprocess usage appears elsewhere, review it before
+# extending this list.
+
+exclude_dirs:
+  - .venv
+  - tests
+  - snapshots
+  - state
+skips:
+  - B404
+  - B603

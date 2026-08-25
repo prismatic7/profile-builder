@@ -10,12 +10,13 @@ mutation must carry a reviewed, expiring confirmation record.
 
 from __future__ import annotations
 
+import builtins
 import json
 import re
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 PHASES = ["scoping", "design", "interview", "implementation", "validation"]
 PHASE_INDEX = {p: i for i, p in enumerate(PHASES)}
@@ -44,7 +45,7 @@ class ApprovalRecord:
         now = time.time() if now is None else now
         return now <= self.expires_at
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "item": self.item,
             "action": self.action,
@@ -54,7 +55,7 @@ class ApprovalRecord:
         }
 
     @classmethod
-    def from_dict(cls, d: Dict[str, Any]) -> "ApprovalRecord":
+    def from_dict(cls, d: dict[str, Any]) -> ApprovalRecord:
         return cls(
             item=str(d.get("item", "")),
             action=str(d.get("action", "")),
@@ -72,10 +73,10 @@ class Build:
     phase: str = "scoping"
     scope: str = ""
     design: str = ""
-    manifest: Dict[str, Any] = field(default_factory=dict)
-    confirmed: List[str] = field(default_factory=list)
-    approvals: List[ApprovalRecord] = field(default_factory=list)
-    snapshots: List[str] = field(default_factory=list)
+    manifest: dict[str, Any] = field(default_factory=dict)
+    confirmed: list[str] = field(default_factory=list)
+    approvals: list[ApprovalRecord] = field(default_factory=list)
+    snapshots: list[str] = field(default_factory=list)
     created_at: float = field(default_factory=time.time)
     updated_at: float = field(default_factory=time.time)
 
@@ -110,7 +111,9 @@ class Build:
 
     # -- approvals ------------------------------------------------------
 
-    def add_approval(self, item: str, action: str, note: str = "", ttl: float = DEFAULT_CONFIRM_TTL) -> None:
+    def add_approval(
+        self, item: str, action: str, note: str = "", ttl: float = DEFAULT_CONFIRM_TTL
+    ) -> None:
         now = time.time()
         self.approvals.append(
             ApprovalRecord(
@@ -135,7 +138,7 @@ class Build:
 
     # -- serialization --------------------------------------------------
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "phase": self.phase,
@@ -150,7 +153,7 @@ class Build:
         }
 
     @classmethod
-    def from_dict(cls, d: Dict[str, Any]) -> "Build":
+    def from_dict(cls, d: dict[str, Any]) -> Build:
         return cls(
             name=str(d.get("name", "")),
             phase=str(d.get("phase", "scoping")),
@@ -201,8 +204,8 @@ class BuildStore:
         self.save(build)
         return build
 
-    def list(self) -> List[Build]:
-        out: List[Build] = []
+    def list(self) -> builtins.list[Build]:
+        out: list[Build] = []
         for p in sorted(self.state_dir.glob("*.json")):
             try:
                 out.append(Build.from_dict(json.loads(p.read_text())))

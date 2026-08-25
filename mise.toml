@@ -30,7 +30,7 @@ run = "uv run pytest tests/test_registration.py"
 
 [tasks.security]
 description = "Run source and dependency security checks"
-run = "uv run bandit -q -r __init__.py src && uv run pip-audit --local"
+run = "uv run bandit -q -c bandit.yaml -r __init__.py src && uv run pip-audit --local"
 
 [tasks.ci]
 description = "Run the complete local and GitHub CI path"

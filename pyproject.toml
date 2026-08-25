@@ -19,6 +19,7 @@ dev = [
   "pip-audit>=2.8,<3",
   "pytest>=9.0.3,<10",
   "ruff>=0.11,<1",
+  "types-PyYAML>=6.0,<7",
 ]
 
 [project.entry-points."hermes_agent.plugins"]

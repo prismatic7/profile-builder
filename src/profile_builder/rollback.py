@@ -6,8 +6,6 @@ most recent snapshot (or the ABSENT marker, which deletes the profile dir).
 
 from __future__ import annotations
 
-from typing import List
-
 from .apply import _restore_snapshot
 from .state import Build, BuildError, BuildStore
 
@@ -24,6 +22,6 @@ def rollback(build: Build, store: BuildStore, profile: str) -> str:
     return f"restored {profile} from snapshot {rel}"
 
 
-def snapshot_history(build: Build) -> List[str]:
+def snapshot_history(build: Build) -> list[str]:
     """List snapshot refs for a build, newest last."""
     return list(build.snapshots)
