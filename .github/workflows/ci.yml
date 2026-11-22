@@ -20,18 +20,18 @@ jobs:
       UV_PYTHON: ${{ matrix.python }}
     steps:
       - name: Check out plugin
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Check out Hermes Agent
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: NousResearch/hermes-agent
           path: .hermes-core
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
       - name: Set up Mise
-        uses: jdx/mise-action@v3
+        uses: jdx/mise-action@v4
         with:
           install: true
           cache: true
